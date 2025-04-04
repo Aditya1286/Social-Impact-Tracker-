@@ -13,26 +13,25 @@ Social Impact Tracker is a web-based application designed to help NGOs, organiza
 ## 🛠️ Technologies Used
 - **Frontend:** React.js, Tailwind CSS
 - **Backend:** Node.js, Express.js
-- **Database:** MongoDB
 - **AI Integration:** Google Gemini API
 - **Authentication:** Firebase Authentication
 
 ## 🔧 Setup Instructions
 1. **Clone the repository:**
    ```sh
-   git clone https://github.com/yourusername/social-impact-tracker.git
+   git clone https://github.com/Aditya1286/social-impact-tracker.git
    cd social-impact-tracker
    ```
 
 2. **Install dependencies:**
    ```sh
-   npm install
+   np install
+   pnpm -i
    ```
 
 3. **Set up environment variables:**
    Create a `.env` file in the root directory and add:
    ```sh
-   REACT_APP_GEMINI_API_KEY=your_api_key_here
    REACT_APP_FIREBASE_CONFIG=your_firebase_config_here
    ```
 
