@@ -63,7 +63,7 @@ Contributions are welcome! If you'd like to contribute:
 
 ## 📞 Contact
 For any queries or suggestions, feel free to reach out:
-- **Email:** your.email@example.com
+- **Email:** aishwaryaaditya2@gmail.com
 - **GitHub:** [YourGitHubProfile](https://github.com/yourusername)
 
 ---
