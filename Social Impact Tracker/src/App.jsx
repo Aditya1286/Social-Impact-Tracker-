@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { IoSend, IoAddCircle, IoStatsChart, IoCalendar } from "react-icons/io5";
 import { RiRobot2Line, RiUserHeartLine, RiTeamLine, RiEarthLine } from "react-icons/ri";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -16,10 +16,6 @@ const App = () => {
   const [newProject, setNewProject] = useState({ name: "", impact: "", hours: 0, people: 0, status: "Planned" });
   const [totalImpact, setTotalImpact] = useState({ hours: 0, people: 0, projects: 0 });
   const [isLoading, setIsLoading] = useState(false);
-  const [currentTypingText, setCurrentTypingText] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-  const [fullResponseText, setFullResponseText] = useState("");
-  const messagesEndRef = useRef(null);
 
   // Example questions that will be fully functional
   const exampleQuestions = [
@@ -39,44 +35,6 @@ const App = () => {
       projects: impactProjects.length
     });
   }, [impactProjects]);
-
-  // Scroll to bottom of messages
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages, currentTypingText]);
-
-  // Typing effect
-  useEffect(() => {
-    if (isTyping && fullResponseText) {
-      const textLength = fullResponseText.length;
-      let currentIndex = 0;
-      
-      const typingInterval = setInterval(() => {
-        if (currentIndex < textLength) {
-          // Add random typing speed variations to make it more human-like
-          const chunkSize = Math.floor(Math.random() * 3) + 1;
-          const nextIndex = Math.min(currentIndex + chunkSize, textLength);
-          setCurrentTypingText(fullResponseText.substring(0, nextIndex));
-          currentIndex = nextIndex;
-        } else {
-          clearInterval(typingInterval);
-          setIsTyping(false);
-          
-          // Add completed message to messages array
-          setMessages(prevMessages => [
-            ...prevMessages.filter(msg => msg.type !== "typingMsg"),
-            { type: "responseMsg", text: fullResponseText }
-          ]);
-          setFullResponseText("");
-          setCurrentTypingText("");
-        }
-      }, 30); // Adjust typing speed here
-      
-      return () => clearInterval(typingInterval);
-    }
-  }, [isTyping, fullResponseText]);
 
   const hitRequest = () => {
     if (message) {
@@ -114,38 +72,24 @@ const App = () => {
     const prompt = `
     You are a social impact assistant named "ImpactTracker." You help users track and maximize their social impact initiatives,
     volunteer work, and community engagement. Provide guidance on measuring impact, finding volunteer opportunities, 
-    organizing community projects, and tracking progress. Write responses in a very human, conversational way. 
-    Include occasional typos that you correct with *corrections, use ... for pauses, and add filler words like "hmm" and "well".
-    Use casual language like "gonna", "wanna", and include occasional emoji. If a user asks about any unrelated topic, 
-    politely respond with: "I'm here to help with your social impact initiatives. Please ask about tracking impact, 
-    finding volunteer opportunities, or organizing community projects."
+    organizing community projects, and tracking progress. If a user asks about any unrelated topic, politely respond with:
+    "I'm here to help with your social impact initiatives. Please ask about tracking impact, finding volunteer opportunities, 
+    or organizing community projects."
   `;
 
     try {
       const result = await model.generateContent(`${prompt}\nUser: ${msg}`);
       const responseText = result.response?.text() || "Sorry, I couldn't process your request.";
 
-      // Set the full response text and start typing animation
-      setFullResponseText(responseText);
-      setIsTyping(true);
-      
-      // Add temporary typing message
-      setMessages(prevMessages => [
-        ...prevMessages.filter(msg => msg.type !== "typingMsg"),
-        { type: "typingMsg", text: "" }
-      ]);
-      
+      setMessages([...newMessages, { type: "responseMsg", text: responseText }]);
     } catch (error) {
       console.error("Error generating response:", error);
-      const fallbackResponse = "Hmm... I'm having a bit of trouble connecting to my knowledge base right now 😅 As your Social Impact Tracker, I can help you measure volunteer hours, track community engagement, and manage your projects. Maybe try your question again in a moment? Or feel free to explore the Projects and Impact tabs to track your initiatives while I sort myself out...";
-      
-      setFullResponseText(fallbackResponse);
-      setIsTyping(true);
-      
-      // Add temporary typing message
-      setMessages(prevMessages => [
-        ...prevMessages.filter(msg => msg.type !== "typingMsg"),
-        { type: "typingMsg", text: "" }
+      setMessages([
+        ...newMessages, 
+        { 
+          type: "responseMsg", 
+          text: "I'm having trouble connecting to my knowledge base right now. As your Social Impact Tracker, I can help you measure volunteer hours, track community engagement, and manage your projects. Please try your question again later or explore the Projects and Impact tabs to track your initiatives." 
+        }
       ]);
     } finally {
       setIsLoading(false);
@@ -254,21 +198,13 @@ const App = () => {
           <div className="px-4 md:px-8 mt-4">
             <div className="messages">
               {messages?.map((msg, index) => {
-                if (msg.type === "typingMsg") {
-                  return (
-                    <div key="typing" className="mssg responseMsg p-4 my-4 rounded-lg bg-[#1e3a1e] mr-auto max-w-[80%] border-l-4 border-green-500">
-                      {currentTypingText}
-                      <span className="inline-block w-2 h-4 ml-1 bg-green-400 animate-pulse"></span>
-                    </div>
-                  );
-                }
                 return (
                   <div key={index} className={`mssg ${msg.type} p-4 my-4 rounded-lg ${msg.type === "userMsg" ? "bg-[#181818] ml-auto max-w-[80%] border-l-4 border-green-700" : "bg-[#1e3a1e] mr-auto max-w-[80%] border-l-4 border-green-500"}`}>
                     {msg.text}
                   </div>
                 );
               })}
-              {isLoading && !isTyping && (
+              {isLoading && (
                 <div className="mssg responseMsg p-4 my-4 rounded-lg bg-[#1e3a1e] mr-auto max-w-[80%] border-l-4 border-green-500">
                   <div className="flex space-x-2">
                     <div className="w-3 h-3 bg-green-500 rounded-full animate-bounce"></div>
@@ -277,7 +213,6 @@ const App = () => {
                   </div>
                 </div>
               )}
-              <div ref={messagesEndRef} />
             </div>
           </div>
         )}
