@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { IoSend, IoAddCircle, IoStatsChart, IoCalendar } from "react-icons/io5";
 import { RiRobot2Line, RiUserHeartLine, RiTeamLine, RiEarthLine } from "react-icons/ri";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -16,6 +16,15 @@ const App = () => {
   const [newProject, setNewProject] = useState({ name: "", impact: "", hours: 0, people: 0, status: "Planned" });
   const [totalImpact, setTotalImpact] = useState({ hours: 0, people: 0, projects: 0 });
   const [isLoading, setIsLoading] = useState(false);
+  
+  // New state for typing effect
+  const [currentTypingMessage, setCurrentTypingMessage] = useState(null);
+  const [displayedText, setDisplayedText] = useState("");
+  const [typingIndex, setTypingIndex] = useState(0);
+  const [isTyping, setIsTyping] = useState(false);
+  
+  // Ref for auto-scrolling
+  const messagesEndRef = useRef(null);
 
   // Example questions that will be fully functional
   const exampleQuestions = [
@@ -35,6 +44,37 @@ const App = () => {
       projects: impactProjects.length
     });
   }, [impactProjects]);
+
+  // Handle typing effect
+  useEffect(() => {
+    if (isTyping && currentTypingMessage && typingIndex < currentTypingMessage.length) {
+      const typingTimeout = setTimeout(() => {
+        setDisplayedText(prev => prev + currentTypingMessage.charAt(typingIndex));
+        setTypingIndex(typingIndex + 1);
+      }, 5); // Adjust speed here - lower number = faster typing
+      
+      return () => clearTimeout(typingTimeout);
+    } else if (isTyping && typingIndex >= currentTypingMessage?.length) {
+      // Typing completed
+      setIsTyping(false);
+      
+      // Update the actual messages array with the full text
+      setMessages(prev => {
+        const updatedMessages = [...prev];
+        // Replace the last message (which is the placeholder) with the complete message
+        updatedMessages[updatedMessages.length - 1] = { 
+          type: "responseMsg", 
+          text: currentTypingMessage 
+        };
+        return updatedMessages;
+      });
+    }
+  }, [isTyping, currentTypingMessage, typingIndex]);
+
+  // Auto-scroll to bottom when messages update or during typing
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, displayedText]);
 
   const hitRequest = () => {
     if (message) {
@@ -80,18 +120,30 @@ const App = () => {
     try {
       const result = await model.generateContent(`${prompt}\nUser: ${msg}`);
       const responseText = result.response?.text() || "Sorry, I couldn't process your request.";
-
-      setMessages([...newMessages, { type: "responseMsg", text: responseText }]);
+      
+      // Add a placeholder message that will be updated as typing progresses
+      setMessages([...newMessages, { type: "responseMsg", text: "" }]);
+      
+      // Start the typing effect
+      setCurrentTypingMessage(responseText);
+      setDisplayedText("");
+      setTypingIndex(0);
+      setIsTyping(true);
+      setIsLoading(false);
+      
     } catch (error) {
       console.error("Error generating response:", error);
-      setMessages([
-        ...newMessages, 
-        { 
-          type: "responseMsg", 
-          text: "I'm having trouble connecting to my knowledge base right now. As your Social Impact Tracker, I can help you measure volunteer hours, track community engagement, and manage your projects. Please try your question again later or explore the Projects and Impact tabs to track your initiatives." 
-        }
-      ]);
-    } finally {
+      
+      const fallbackResponse = "I'm having trouble connecting to my knowledge base right now. As your Social Impact Tracker, I can help you measure volunteer hours, track community engagement, and manage your projects. Please try your question again later or explore the Projects and Impact tabs to track your initiatives.";
+      
+      // Add a placeholder message that will be updated as typing progresses
+      setMessages([...newMessages, { type: "responseMsg", text: "" }]);
+      
+      // Start the typing effect with fallback response
+      setCurrentTypingMessage(fallbackResponse);
+      setDisplayedText("");
+      setTypingIndex(0);
+      setIsTyping(true);
       setIsLoading(false);
     }
   };
@@ -100,6 +152,10 @@ const App = () => {
     setIsResponseScreen(false);
     setMessages([]);
     setActiveTab("chat");
+    setIsTyping(false);
+    setCurrentTypingMessage(null);
+    setDisplayedText("");
+    setTypingIndex(0);
   };
 
   const addProject = () => {
@@ -197,7 +253,16 @@ const App = () => {
         {activeTab === "chat" && isResponseScreen && (
           <div className="px-4 md:px-8 mt-4">
             <div className="messages">
-              {messages?.map((msg, index) => {
+              {messages.map((msg, index) => {
+                // Display all messages except the last response message if typing is active
+                if (isTyping && index === messages.length - 1 && msg.type === "responseMsg") {
+                  return (
+                    <div key={index} className={`mssg ${msg.type} p-4 my-4 rounded-lg bg-[#1e3a1e] mr-auto max-w-[80%] border-l-4 border-green-500`}>
+                      {displayedText}
+                      <span className="typing-cursor animate-pulse">|</span>
+                    </div>
+                  );
+                }
                 return (
                   <div key={index} className={`mssg ${msg.type} p-4 my-4 rounded-lg ${msg.type === "userMsg" ? "bg-[#181818] ml-auto max-w-[80%] border-l-4 border-green-700" : "bg-[#1e3a1e] mr-auto max-w-[80%] border-l-4 border-green-500"}`}>
                     {msg.text}
@@ -213,6 +278,7 @@ const App = () => {
                   </div>
                 </div>
               )}
+              <div ref={messagesEndRef} />
             </div>
           </div>
         )}
