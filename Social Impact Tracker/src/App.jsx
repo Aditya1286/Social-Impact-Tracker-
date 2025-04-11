@@ -112,7 +112,16 @@ const App = () => {
     const prompt = `
     You are a social impact assistant named "ImpactTracker." You help users track and maximize their social impact initiatives,
     volunteer work, and community engagement. Provide guidance on measuring impact, finding volunteer opportunities, 
-    organizing community projects, and tracking progress. If a user asks about any unrelated topic, politely respond with:
+    organizing community projects, and tracking progress.
+    
+    IMPORTANT FORMATTING INSTRUCTIONS:
+    1. Use line breaks (double newlines) between paragraphs to ensure readable text
+    2. Use asterisks for emphasis (*important point*)
+    3. For lists, use clear numbered points (1., 2., 3.) with line breaks between items
+    4. For bold highlighting, use double asterisks (**key point**)
+    5. When mentioning metrics, ensure they stand out visually
+    
+    If a user asks about any unrelated topic, politely respond with:
     "I'm here to help with your social impact initiatives. Please ask about tracking impact, finding volunteer opportunities, 
     or organizing community projects."
   `;
@@ -121,11 +130,18 @@ const App = () => {
       const result = await model.generateContent(`${prompt}\nUser: ${msg}`);
       const responseText = result.response?.text() || "Sorry, I couldn't process your request.";
       
+      // Format response for better readability
+      let formattedResponse = responseText
+        // Ensure paragraphs have proper spacing
+        .replace(/\n\s*\n/g, '\n\n')
+        // Make sure lists have proper spacing
+        .replace(/(\d+\.\s*[^\n]+)(?=\n\d+\.)/g, '$1\n');
+        
       // Add a placeholder message that will be updated as typing progresses
       setMessages([...newMessages, { type: "responseMsg", text: "" }]);
       
       // Start the typing effect
-      setCurrentTypingMessage(responseText);
+      setCurrentTypingMessage(formattedResponse);
       setDisplayedText("");
       setTypingIndex(0);
       setIsTyping(true);
@@ -257,20 +273,53 @@ const App = () => {
                 // Display all messages except the last response message if typing is active
                 if (isTyping && index === messages.length - 1 && msg.type === "responseMsg") {
                   return (
-                    <div key={index} className={`mssg ${msg.type} p-4 my-4 rounded-lg bg-[#1e3a1e] mr-auto max-w-[80%] border-l-4 border-green-500`}>
-                      {displayedText}
+                    <div key={index} className="mssg responseMsg p-5 my-5 rounded-lg bg-[#1e3a1e] mr-auto max-w-[85%] border-l-4 border-green-500 shadow-md">
+                      <div className="flex items-center mb-2">
+                        <RiRobot2Line className="text-green-400 mr-2 text-xl" />
+                        <span className="font-medium text-green-300">ImpactTracker</span>
+                      </div>
+                      <div className="prose prose-sm prose-invert max-w-none">
+                        {displayedText.split('\n\n').map((paragraph, pIndex) => (
+                          <p key={pIndex}>{paragraph}</p>
+                        ))}
+                      </div>
                       <span className="typing-cursor animate-pulse">|</span>
                     </div>
                   );
                 }
                 return (
-                  <div key={index} className={`mssg ${msg.type} p-4 my-4 rounded-lg ${msg.type === "userMsg" ? "bg-[#181818] ml-auto max-w-[80%] border-l-4 border-green-700" : "bg-[#1e3a1e] mr-auto max-w-[80%] border-l-4 border-green-500"}`}>
-                    {msg.text}
+                  <div 
+                    key={index} 
+                    className={`mssg ${msg.type} p-5 my-5 rounded-lg shadow-md ${
+                      msg.type === "userMsg" 
+                        ? "bg-[#181818] ml-auto max-w-[85%] border-l-4 border-green-700" 
+                        : "bg-[#1e3a1e] mr-auto max-w-[85%] border-l-4 border-green-500"
+                    }`}
+                  >
+                    <div className="flex items-center mb-2">
+                      {msg.type === "userMsg" ? (
+                        <RiUserHeartLine className="text-green-400 mr-2 text-xl" />
+                      ) : (
+                        <RiRobot2Line className="text-green-400 mr-2 text-xl" />
+                      )}
+                      <span className="font-medium text-green-300">
+                        {msg.type === "userMsg" ? "You" : "ImpactTracker"}
+                      </span>
+                    </div>
+                    <div className="prose prose-sm prose-invert max-w-none">
+                      {msg.text.split('\n\n').map((paragraph, pIndex) => (
+                        <p key={pIndex}>{paragraph}</p>
+                      ))}
+                    </div>
                   </div>
                 );
               })}
               {isLoading && (
-                <div className="mssg responseMsg p-4 my-4 rounded-lg bg-[#1e3a1e] mr-auto max-w-[80%] border-l-4 border-green-500">
+                <div className="mssg responseMsg p-5 my-5 rounded-lg bg-[#1e3a1e] mr-auto max-w-[85%] border-l-4 border-green-500 shadow-md">
+                  <div className="flex items-center mb-2">
+                    <RiRobot2Line className="text-green-400 mr-2 text-xl" />
+                    <span className="font-medium text-green-300">ImpactTracker</span>
+                  </div>
                   <div className="flex space-x-2">
                     <div className="w-3 h-3 bg-green-500 rounded-full animate-bounce"></div>
                     <div className="w-3 h-3 bg-green-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
