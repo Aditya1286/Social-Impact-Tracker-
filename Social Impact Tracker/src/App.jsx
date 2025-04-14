@@ -135,7 +135,7 @@ const App = () => {
         // Ensure paragraphs have proper spacing
         .replace(/\n\s*\n/g, '\n\n')
         // Make sure lists have proper spacing
-        .replace(/(\d+\.\s*[^\n]+)(?=\n\d+\.)/g, '$1\n');
+
         
       // Add a placeholder message that will be updated as typing progresses
       setMessages([...newMessages, { type: "responseMsg", text: "" }]);
