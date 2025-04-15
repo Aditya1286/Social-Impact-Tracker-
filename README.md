@@ -64,7 +64,7 @@ Contributions are welcome! If you'd like to contribute:
 ## 📞 Contact
 For any queries or suggestions, feel free to reach out:
 - **Email:** aishwaryaaditya2@gmail.com
-- **GitHub:** [YourGitHubProfile](https://github.com/yourusername)
+- **GitHub:** [YourGitHubProfile](https://github.comAditya1286)
 
 ---
 Thank you for using **Social Impact Tracker**! 🚀
